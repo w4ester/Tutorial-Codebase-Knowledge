@@ -1,4 +1,3 @@
-import requests
 import base64
 import os
 import tempfile
@@ -7,6 +6,7 @@ import time
 import fnmatch
 from typing import Union, Set, List, Dict, Tuple, Any
 from urllib.parse import urlparse
+from security import safe_requests
 
 def crawl_github_files(
     repo_url, 
@@ -177,7 +177,7 @@ def crawl_github_files(
         url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
         params = {"ref": ref}
         
-        response = requests.get(url, headers=headers, params=params)
+        response = safe_requests.get(url, headers=headers, params=params)
         
         if response.status_code == 403 and 'rate limit exceeded' in response.text.lower():
             reset_time = int(response.headers.get('X-RateLimit-Reset', 0))
@@ -234,7 +234,7 @@ def crawl_github_files(
                 # For files, get raw content
                 if "download_url" in item and item["download_url"]:
                     file_url = item["download_url"]
-                    file_response = requests.get(file_url, headers=headers)
+                    file_response = safe_requests.get(file_url, headers=headers)
                     
                     # Final size check in case content-length header is available but differs from metadata
                     content_length = int(file_response.headers.get('content-length', 0))
@@ -250,7 +250,7 @@ def crawl_github_files(
                         print(f"Failed to download {rel_path}: {file_response.status_code}")
                 else:
                     # Alternative method if download_url is not available
-                    content_response = requests.get(item["url"], headers=headers)
+                    content_response = safe_requests.get(item["url"], headers=headers)
                     if content_response.status_code == 200:
                         content_data = content_response.json()
                         if content_data.get("encoding") == "base64" and "content" in content_data:
